@@ -9,10 +9,10 @@ async function translateAll(posts) {
         counter += 1;
         let swedishProverb = post.original;
 
-        console.log(`[${counter}/${posts.length}]Translating ${swedishProverb}`);
+        console.log(`[${counter}/${posts.length}] Translating: ${swedishProverb}`);
         let translation = await translate(swedishProverb);
 
-        console.log(`Inserting translation ${translation}`);
+        console.log(`[${counter}/${posts.length}] Inserting:   ${translation}`);
         await db.update({
             original: swedishProverb,
             translation: translation
