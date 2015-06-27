@@ -3,10 +3,13 @@ import translate from './translate';
 import * as db  from '../../shared/db';
 
 async function translateAll(posts) {
+    let counter = 0;
+
     for (let post of posts) {
+        counter += 1;
         let swedishProverb = post.original;
 
-        console.log(`Translating ${swedishProverb}`);
+        console.log(`[${counter}/${posts.length}]Translating ${swedishProverb}`);
         let translation = await translate(swedishProverb);
 
         console.log(`Inserting translation ${translation}`);
