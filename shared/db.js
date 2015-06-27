@@ -33,7 +33,7 @@ doQuery = (options) => {
 // --------------------------------------------------------------------------
 //  API
 // --------------------------------------------------------------------------
-var list = () => {
+export function list() {
   return doQuery({
     query: 'SELECT * FROM posts'
   }).then(result => {
@@ -41,18 +41,24 @@ var list = () => {
   });
 };
 
-var insert = (post) => {
+export function insert(post) {
   return doQuery({
     query:  'INSERT INTO posts (original, translation, post_url) VALUES ($1,$2,$3)',
     params: [ post.original, post.translation, post.post_url ]
   });
 };
 
+export function update(post) {
+  return doQuery({
+    query:  'UPDATE posts SET translation=$2, post_url=$3 WHERE original=$1',
+    params: [ post.original, post.translation, post.post_url ]
+  });
+};
 
-// --------------------------------------------------------------------------
-//  Exports
-// --------------------------------------------------------------------------
-module.exports = {
-  insert,
-  list
+export function listNonTranslated() {
+  return doQuery({
+    query: 'SELECT * FROM posts WHERE translation IS NULL'
+  }).then(result => {
+    return result.rows;
+  });
 };

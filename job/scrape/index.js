@@ -3,7 +3,7 @@ import polyfill from 'babel/polyfill';
 import cheerio from 'cheerio';
 import getList from './get_list';
 import parser  from './parser';
-import db      from '../shared/db';
+import * as db from '../../shared/db';
 
 getList().then( (listHtml) => {
     var parsedTexts = parser(listHtml);
