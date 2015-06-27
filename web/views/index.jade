@@ -1,0 +1,17 @@
+extends ./layout.jade
+
+block content
+  div.container
+    h3 Ancient Swedish Proverbs
+
+    table
+      tr
+        th Original
+        th Translation
+        th Post URL
+
+      each post, i in posts
+        tr
+          td.post__original    #{post.original}
+          td.post__translation #{post.translation}
+          td.post__post-url    #{post.post_url}
