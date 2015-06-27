@@ -22,5 +22,5 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Christoffer Skeppstedt <chris.skeppstedt@klarna.com> (https://github.com/cskeppstedt/)",
-  "license": "ISC"
+  "license": ""
 }
