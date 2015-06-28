@@ -2,16 +2,19 @@ extends ./layout.jade
 
 block content
   div.container
-    h3 Ancient Swedish Proverbs
-
-    table
+    table.posts-table
       tr
-        th Original
-        th Translation
-        th Post URL
+        th.posts-table__header Original
+        th.posts-table__header Translation
+        th.posts-table__header Post URL
 
       each post, i in posts
-        tr
-          td.post__original    #{post.original}
-          td.post__translation #{post.translation}
-          td.post__post-url    #{post.post_url}
+        tr.posts-table__row
+          td.posts-table__cell--original    #{post.original}
+          td.posts-table__cell--translation #{post.translation}
+          td.posts-table__cell--post-url
+            if post.post_url
+              a.posts-table__post-link(href=post.post_url) Already published!
+            if post.publish_url
+              a.posts-table__publish-link(href=post.publish_url) Publish
+

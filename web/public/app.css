@@ -1,0 +1,61 @@
+body {
+    font-size: 14px;
+    font-family: Helvitica, sans-serif;
+    margin: 0;
+    padding: 1em;
+
+}
+
+.posts-table {
+    margin: 1em 0;
+    padding: 0;
+    border-collapse: collapse;
+    border: none;
+}
+
+.posts-table__header {
+    font-weight: bold;
+    text-align: left;
+    margin: 0;
+    padding: 0.2em 0.5em;
+    white-space: nowrap;
+}
+
+.posts-table__cell--original,
+.posts-table__cell--translation,
+.posts-table__cell--post-url {
+    margin: 0;
+    padding: 0.2em 0.5em;
+}
+
+.posts-table__row:hover {
+    background-color: #ddd;
+}
+
+.posts-table__post-link,
+.posts-table__publish-link {
+    white-space: nowrap;
+}
+
+
+.publish__header {
+    font-weight: normal;
+    font-size: 18px;
+    font-style: italic;
+    padding: 0;
+    margin: 0.5em 0;
+}
+
+.publish__input {
+    box-sizing: border-box;
+    font-size: 18px;
+    font-family: Helvitica, sans-serif;
+    padding: 12px;
+    margin: 0.5em 0;
+    width: 100%;
+}
+
+.publish__button {
+    padding: 12px;
+    font-size: 16px;
+}

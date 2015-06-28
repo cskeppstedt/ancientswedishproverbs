@@ -1,0 +1,17 @@
+extends ./layout.jade
+
+block content
+  p
+    a(href='/') Back to list
+
+  div.container
+    h3.publish__header=post.original
+
+    form(method='post')
+      input.publish__input(name='translation', value=post.translation)
+
+      if post.post_url
+        p.publish__published Published to tumblr:
+        a.publish__post-url(href=post.post_url)= post.post_url
+      else
+        button.publish__button(type='submit') Publish on tumblr

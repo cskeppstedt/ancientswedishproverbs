@@ -62,3 +62,12 @@ export function listNonTranslated() {
     return result.rows;
   });
 };
+
+export function findByOriginal(original) {
+  return doQuery({
+    query:  'SELECT * FROM posts WHERE original=$1',
+    params: [original]
+  }).then(result => {
+    return result.rows[0];
+  });
+};
