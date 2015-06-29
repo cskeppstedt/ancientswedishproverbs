@@ -1,0 +1,13 @@
+extends ./layout.jade
+
+block content
+  div.container
+    h3.header Login
+    p.flow-text
+      if failed
+        p.login__failed Login failed
+
+      p You need to log in with your tumblr credentials
+
+      p
+        a(href='/auth/tumblr') Ok, let's go
