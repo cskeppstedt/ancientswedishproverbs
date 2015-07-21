@@ -19,24 +19,33 @@ import { Strategy } from 'passport-tumblr';
 import Cycle from '@cycle/core'
 import CycleDOM from '@cycle/dom'
 import appFn from './app'
+import serialize from 'serialize-javascript'
 
 let {h, hJSX, makeHTMLDriver} = CycleDOM
 let {Rx} = Cycle
 
-let pageHtml = function() {
-  let page$ = appFn().DOM.map(vtree => (
+let pageFn = function(appContext$) {
+  let app$ = appFn(appContext$).DOM
+
+  let page$ = Rx.Observable.combineLatest(app$, appContext$, (vtree, appContext) => (
     <html>
       <head>
         <title>cycle.js isomorphism test</title>
       </head>
       <body>
-        <div id="app">{vtree}</div>
+        <div id="app">{ vtree }</div>
+        <script>
+          { `window.appContext = ${serialize(appContext)}` }
+        </script>
       </body>
     </html>
   ))
 
-  return {
-    DOM: page$
+  return (ext) => {
+    console.log(ext)
+    return {
+      DOM: page$
+    }
   }
 }
 
@@ -104,31 +113,26 @@ function ensureAuthenticated(req, res, next) {
 
 /* ROUTES */
 app.get('/', ensureAuthenticated, (request, response) => {
-  let [requests, responses] = Cycle.run(pageHtml, {
+  let promise = db.list().then(posts => {
+    return posts.map(post => {
+      if (!post.post_url) {
+        post.publish_url = '/post/' + encodeURIComponent(post.original);
+      }
+
+      return post;
+    });
+  }).catch(err => {
+    console.log(err);
+  });
+
+  let context$ = Rx.Observable.fromPromise(promise)
+
+  let [requests, responses] = Cycle.run(pageFn(context$), {
     DOM: makeHTMLDriver()
   })
 
   let html$ = responses.DOM.get(':root').map(prependDoctype)
   html$.subscribe(html => response.send(html))
-
-  /*
-    db.list().then( (posts) => {
-        posts.forEach( (post) => {
-            if (!post.post_url) {
-                post.publish_url = '/post/' + encodeURIComponent(post.original);
-            }
-        });
-
-        response.render('index', {
-            posts: posts
-        });
-    }).catch( (err) => {
-        console.log(err);
-        response.render('error', {
-            err: err
-        });
-    });
-  */
 });
 
 app.get('/login', (request, response) => {
