@@ -1,3 +1,6 @@
+/** @jsx hJSX */
+'use strict';
+
 import 'babel/polyfill';
 
 import * as db      from '../shared/db';
@@ -12,6 +15,34 @@ import pgSession    from 'connect-pg-simple';
 import session      from 'express-session';
 import tumblr       from 'tumblr.js';
 import { Strategy } from 'passport-tumblr';
+
+import Cycle from '@cycle/core'
+import CycleDOM from '@cycle/dom'
+import appFn from './app'
+
+let {h, hJSX, makeHTMLDriver} = CycleDOM
+let {Rx} = Cycle
+
+let pageHtml = function() {
+  let page$ = appFn().DOM.map(vtree => (
+    <html>
+      <head>
+        <title>cycle.js isomorphism test</title>
+      </head>
+      <body>
+        <div id="app">{vtree}</div>
+      </body>
+    </html>
+  ))
+
+  return {
+    DOM: page$
+  }
+}
+
+function prependDoctype(html) {
+  return `<!doctype html>${html}`;
+}
 
 
 /* SETUP */
@@ -73,6 +104,14 @@ function ensureAuthenticated(req, res, next) {
 
 /* ROUTES */
 app.get('/', ensureAuthenticated, (request, response) => {
+  let [requests, responses] = Cycle.run(pageHtml, {
+    DOM: makeHTMLDriver()
+  })
+
+  let html$ = responses.DOM.get(':root').map(prependDoctype)
+  html$.subscribe(html => response.send(html))
+
+  /*
     db.list().then( (posts) => {
         posts.forEach( (post) => {
             if (!post.post_url) {
@@ -89,6 +128,7 @@ app.get('/', ensureAuthenticated, (request, response) => {
             err: err
         });
     });
+  */
 });
 
 app.get('/login', (request, response) => {
