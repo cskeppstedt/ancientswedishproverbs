@@ -24,29 +24,34 @@ import serialize from 'serialize-javascript'
 let {h, hJSX, makeHTMLDriver} = CycleDOM
 let {Rx} = Cycle
 
-let pageFn = function(appContext$) {
-  let app$ = appFn(appContext$).DOM
-
-  let page$ = Rx.Observable.combineLatest(app$, appContext$, (vtree, appContext) => (
+function wrapVTreeWithHTMLBoilerplate(vtree, context) {
+  return (
     <html>
       <head>
         <title>cycle.js isomorphism test</title>
       </head>
       <body>
-        <div id="app">{ vtree }</div>
+        <div className="app-container">{ vtree }</div>
         <script>
-          { `window.appContext = ${serialize(appContext)}` }
+          { `window.appContext = ${serialize(context)}` }
         </script>
+        <script src="http://localhost:8080/webpack-dev-server.js"></script>
+        <script src="http://localhost:8080/assets/app.js"></script>
       </body>
     </html>
-  ))
+  )
+}
 
-  return (ext) => {
-    console.log(ext)
+function wrapAppResultWithBoilerplate(appFn, context$) {
+  return function wrappedAppFn(ext) {
+    let vtree$ = appFn(ext).DOM;
+    let wrappedVTree$ = Rx.Observable.combineLatest(vtree$, context$,
+      wrapVTreeWithHTMLBoilerplate
+    );
     return {
-      DOM: page$
-    }
-  }
+      DOM: wrappedVTree$
+    };
+  };
 }
 
 function prependDoctype(html) {
@@ -113,26 +118,31 @@ function ensureAuthenticated(req, res, next) {
 
 /* ROUTES */
 app.get('/', ensureAuthenticated, (request, response) => {
-  let promise = db.list().then(posts => {
-    return posts.map(post => {
-      if (!post.post_url) {
-        post.publish_url = '/post/' + encodeURIComponent(post.original);
-      }
+  db.list().then(posts => {
+    let context$ = Rx.Observable.just({
+      posts: posts.map(post => {
+        if (!post.post_url) {
+          post.publish_url = '/post/' + encodeURIComponent(post.original);
+        }
 
-      return post;
-    });
+        return post;
+      })
+    })
+
+    let wrappedAppFn = wrapAppResultWithBoilerplate(appFn, context$)
+    let [requests, responses] = Cycle.run(wrappedAppFn, {
+      DOM: makeHTMLDriver(),
+      context: () => context$
+    })
+
+    let html$ = responses.DOM.get(':root').map(prependDoctype)
+    html$.subscribe(html => response.send(html))
   }).catch(err => {
     console.log(err);
+    response.render('error', {
+        err: err
+    });
   });
-
-  let context$ = Rx.Observable.fromPromise(promise)
-
-  let [requests, responses] = Cycle.run(pageFn(context$), {
-    DOM: makeHTMLDriver()
-  })
-
-  let html$ = responses.DOM.get(':root').map(prependDoctype)
-  html$.subscribe(html => response.send(html))
 });
 
 app.get('/login', (request, response) => {
