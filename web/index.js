@@ -36,6 +36,7 @@ function wrapVTreeWithHTMLBoilerplate(vtree, context) {
           { `window.appContext = ${serialize(context)}` }
         </script>
         <script src="http://localhost:8080/webpack-dev-server.js"></script>
+        <script src="http://localhost:8080/assets/vendor.js"></script>
         <script src="http://localhost:8080/assets/app.js"></script>
       </body>
     </html>

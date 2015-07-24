@@ -7,7 +7,7 @@ import appFn from './app'
 
 function client(responses) {
   let requests = appFn(responses)
-  requests.DOM = requests.DOM.skip(2)
+  requests.DOM = requests.DOM.skip(1)
   return requests
 }
 

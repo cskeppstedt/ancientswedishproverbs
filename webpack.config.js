@@ -10,6 +10,10 @@ module.exports = {
     'app': [
       'webpack-dev-server/client?http://localhost:8080/assets/',
       './web/client.js'
+    ],
+    'vendor': [
+      '@cycle/core',
+      '@cycle/dom'
     ]
   },
 
@@ -21,6 +25,7 @@ module.exports = {
 
   plugins: [
     new webpack.NoErrorsPlugin(),
+    new webpack.optimize.CommonsChunkPlugin('vendor', 'vendor.js'),
     /*new webpack.optimize.UglifyJsPlugin({ minimize: true })*/
   ],
 
