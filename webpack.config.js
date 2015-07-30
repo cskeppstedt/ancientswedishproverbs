@@ -9,7 +9,7 @@ module.exports = {
   entry: {
     'app': [
       'webpack-dev-server/client?http://localhost:8080/assets/',
-      './web/client.js'
+      './web/app.client.js'
     ],
     'vendor': [
       '@cycle/core',

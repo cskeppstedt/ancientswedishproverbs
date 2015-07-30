@@ -3,64 +3,22 @@
 
 import 'babel/polyfill';
 
-import * as db      from '../shared/db'
-import Promise      from 'bluebird'
-import bodyParser   from 'body-parser'
-import cookieParser from 'cookie-parser'
-import express      from 'express'
-import morgan       from 'morgan'
-import passport     from 'passport'
-import pg           from 'pg'
-import pgSession    from 'connect-pg-simple'
-import session      from 'express-session'
-import tumblr       from 'tumblr.js'
-import { Strategy } from 'passport-tumblr'
-import SocketIO     from 'socket.io'
-import http         from 'http'
-import passportSocketIo from 'passport.socketio'
-
-import Cycle from '@cycle/core'
-import CycleDOM from '@cycle/dom'
-import appFn from './app'
-import serialize from 'serialize-javascript'
-
-let {h, hJSX, makeHTMLDriver} = CycleDOM
-let {Rx} = Cycle
-
-function wrapVTreeWithHTMLBoilerplate(vtree, context) {
-  return (
-    <html>
-      <head>
-        <title>cycle.js isomorphism test</title>
-      </head>
-      <body>
-        <div className="app-container">{ vtree }</div>
-        <script>
-          { `window.appContext = ${serialize(context)}` }
-        </script>
-        <script src="http://localhost:8080/webpack-dev-server.js"></script>
-        <script src="http://localhost:8080/assets/vendor.js"></script>
-        <script src="http://localhost:8080/assets/app.js"></script>
-      </body>
-    </html>
-  )
-}
-
-function wrapAppResultWithBoilerplate(appFn, context$) {
-  return function wrappedAppFn(ext) {
-    let vtree$ = appFn(ext).DOM;
-    let wrappedVTree$ = Rx.Observable.combineLatest(vtree$, context$,
-      wrapVTreeWithHTMLBoilerplate
-    );
-    return {
-      DOM: wrappedVTree$
-    };
-  };
-}
-
-function prependDoctype(html) {
-  return `<!doctype html>${html}`;
-}
+import * as db          from '../shared/db'
+import Promise          from 'bluebird'
+import appServerSide    from './app.server'
+import bodyParser       from 'body-parser'
+import cookieParser     from 'cookie-parser'
+import express          from 'express'
+import http             from 'http'
+import morgan           from 'morgan'
+import passport         from 'passport'
+import pg               from 'pg'
+import pgSession        from 'connect-pg-simple'
+import session          from 'express-session'
+import socket           from './socket'
+import tumblr           from 'tumblr.js'
+import { Rx }           from '@cycle/core'
+import { Strategy }     from 'passport-tumblr'
 
 
 /* SETUP */
@@ -111,7 +69,6 @@ passport.use(new Strategy({
   }
 ));
 
-
 function ensureAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
       console.log('**** user is logged in')
@@ -135,14 +92,7 @@ app.get('/', ensureAuthenticated, (request, response) => {
       })
     })
 
-    let wrappedAppFn = wrapAppResultWithBoilerplate(appFn, context$)
-    let [requests, responses] = Cycle.run(wrappedAppFn, {
-      DOM: makeHTMLDriver(),
-      context: () => context$
-    })
-
-    let html$ = responses.DOM.get(':root').map(prependDoctype)
-    html$.subscribe(html => response.send(html))
+    appServerSide(context$).html$.subscribe(html => response.send(html))
   }).catch(err => {
     console.log(err);
     response.render('error', {
@@ -253,49 +203,10 @@ app.get('/auth/tumblr/callback',
     res.redirect('/');
   }
 );
-/*
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  saveUninitialized: true,
-  resave: true,
-  store: new (pgSession(session))({ pg }),
-  cookie: { maxAge: 90 * 24 * 60 * 60 * 1000 } // 90 days
-}));
-*/
-
-let io = SocketIO(server, { path: '/proverbs/socket.io'})
-
-io.use(passportSocketIo.authorize({
-  cookieParser: cookieParser,
-  key:          'connect.sid',
-  secret:       process.env.SESSION_SECRET,
-  store:        sessionStore,
-
-  success: (data, accept) => {
-    console.log('successful connection to socket.io');
-    accept();
-  },
-
-  fail: (data, message, error, accept) => {
-    console.log('failed connection to socket.io:', message);
-    if(error)
-      accept(new Error(message));
-  }
-}))
-
-io.on('connection', (socket) => {
-  console.log('[connection]', socket.id);
-
-  ['connect', 'disconnect', 'reconnect', 'error'].forEach(evt => {
-    socket.on(evt, () => {
-      console.log(`[${evt}]`, socket.id)
-    })
-  })
-
-})
 
 
 /* START SERVER */
 server.listen(app.get('port'), () => {
+  socket.listen(server, sessionStore)
   console.log('Node app is running on port', app.get('port'));
 });

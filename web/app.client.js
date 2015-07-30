@@ -3,7 +3,7 @@
 
 import Cycle from '@cycle/core'
 import { h, hJSX, makeDOMDriver } from '@cycle/dom'
-import appFn from './app'
+import appFn from './app/'
 import SocketIO from 'socket.io-client'
 
 SocketIO('http://localhost:5000', { path: '/proverbs/socket.io'})
