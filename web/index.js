@@ -1,27 +1,20 @@
-/** @jsx hJSX */
 'use strict';
 
-import 'babel/polyfill';
-
-import * as db          from '../shared/db'
-import Promise          from 'bluebird'
-import appServerSide    from './app.server'
-import bodyParser       from 'body-parser'
-import cookieParser     from 'cookie-parser'
-import express          from 'express'
-import http             from 'http'
-import morgan           from 'morgan'
-import passport         from 'passport'
-import pg               from 'pg'
-import pgSession        from 'connect-pg-simple'
-import session          from 'express-session'
-import socket           from './socket'
-import tumblr           from 'tumblr.js'
-import { Rx }           from '@cycle/core'
-import { Strategy }     from 'passport-tumblr'
+import bodyParser   from 'body-parser'
+import cookieParser from 'cookie-parser'
+import express      from 'express'
+import http         from 'http'
+import morgan       from 'morgan'
+import passport     from 'passport'
+import pg           from 'pg'
+import pgSession    from 'connect-pg-simple'
+import router       from './router'
+import session      from 'express-session'
+import socket       from './socket'
+import tumblr       from 'tumblr.js'
+import { Strategy } from 'passport-tumblr'
 
 
-/* SETUP */
 let app    = express()
 let server = http.Server(app)
 let sessionStore = new (pgSession(session))({ pg })
@@ -35,6 +28,7 @@ app.use(cookieParser());
 app.use(bodyParser.urlencoded({
   extended: true
 }));
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   saveUninitialized: true,
@@ -69,144 +63,9 @@ passport.use(new Strategy({
   }
 ));
 
-function ensureAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-      console.log('**** user is logged in')
-      return next();
-  }
+app.use('/', router.setup(passport))
 
-  console.log('**** user is not logged in', req.user)
-  res.redirect('/login')
-}
-
-/* ROUTES */
-app.get('/', ensureAuthenticated, (request, response) => {
-  db.list().then(posts => {
-    let context$ = Rx.Observable.just({
-      posts: posts.map(post => {
-        if (!post.post_url) {
-          post.publish_url = '/post/' + encodeURIComponent(post.original);
-        }
-
-        return post;
-      })
-    })
-
-    appServerSide(context$).html$.subscribe(html => response.send(html))
-  }).catch(err => {
-    console.log(err);
-    response.render('error', {
-        err: err
-    });
-  });
-});
-
-app.get('/login', (request, response) => {
-    response.render('login');
-});
-
-app.get('/login/failed', (request, response) => {
-    response.render('login', {
-        failed: true
-    });
-});
-
-app.get('/post/:original', ensureAuthenticated, (request, response) => {
-    let original = decodeURIComponent(request.params.original);
-
-    db.findByOriginal(original).then( (post) => {
-        if (!post) {
-            throw new Error('No post found with original: ' + original);
-        }
-
-        response.render('post', {
-            post: post
-        });
-    }).catch( (err) => {
-        console.log(err);
-        response.render('error', {
-            err: err
-        });
-    });
-});
-
-app.post('/post/:original', ensureAuthenticated, (request, response) => {
-    let original = decodeURIComponent(request.params.original);
-    let translation = request.body.translation;
-
-    if (!translation || !translation.length) {
-        throw new Error('Translation not found in request body');
-    }
-
-    db.findByOriginal(original).then( (post) => {
-        if (!post) {
-            throw new Error('No post found with original: ' + original);
-        }
-
-        if (post.post_url) {
-            throw new Error('Already posted!');
-        }
-
-
-        let client = tumblr.createClient({
-          consumer_key: process.env.TUMBLR_CONSUMER_KEY,
-          consumer_secret: process.env.TUMBLR_SECRET_KEY,
-          token: request.user.token,
-          token_secret: request.user.tokenSecret
-        });
-
-        client.text(process.env.TUMBLR_BLOG_DOMAIN, {
-            title: translation,
-            body: original
-        }, (err, tumblrResponse) => {
-            console.log('****** TUMBLR POST RESPONSE', tumblrResponse);
-            post.translation = translation;
-            post.post_url = `http://${process.env.TUMBLR_BLOG_DOMAIN}/post/${tumblrResponse.id}`;
-
-            db.update(post).then( () => {
-                response.render('post', {
-                    post: post
-                });
-            });
-        });
-
-    }).catch( (err) => {
-        console.log(err);
-        response.render('error', {
-            err: err
-        });
-    });
-});
-
-
-// GET /auth/tumblr
-//   Use passport.authenticate() as route middleware to authenticate the
-//   request.  The first step in Tumblr authentication will involve redirecting
-//   the user to tumblr.com.  After authorization, Tumblr will redirect the user
-//   back to this application at /auth/tumblr/callback
-app.get('/auth/tumblr',
-  passport.authenticate('tumblr'),
-  function(req, res){
-    // The request will be redirected to Tumblr for authentication, so this
-    // function will not be called.
-  }
-);
-
-// GET /auth/tumblr/callback
-//   Use passport.authenticate() as route middleware to authenticate the
-//   request.  If authentication fails, the user will be redirected back to the
-//   login page.  Otherwise, the primary route function function will be called,
-//   which, in this example, will redirect the user to the home page.
-app.get('/auth/tumblr/callback', 
-  passport.authenticate('tumblr', { failureRedirect: '/login/failed', successRedirect: '/' }),
-  function(req, res) {
-    res.redirect('/');
-  }
-);
-
-
-/* START SERVER */
 server.listen(app.get('port'), () => {
   socket.listen(server, sessionStore)
-  console.log('Node app is running on port', app.get('port'));
+  console.log('[express] running on port', app.get('port'));
 });
