@@ -13,7 +13,8 @@ module.exports = {
     ],
     'vendor': [
       '@cycle/core',
-      '@cycle/dom'
+      '@cycle/dom',
+      'socket.io-client'
     ]
   },
 

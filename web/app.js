@@ -1,6 +1,7 @@
 /** @jsx hJSX */
-'use strict';
-import Cycle from '@cycle/core'
+'use strict'
+
+import Cycle    from '@cycle/core'
 import CycleDOM from '@cycle/dom'
 
 let { h, hJSX, makeDOMDriver } = CycleDOM

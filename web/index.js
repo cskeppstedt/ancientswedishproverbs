@@ -3,18 +3,21 @@
 
 import 'babel/polyfill';
 
-import * as db      from '../shared/db';
-import Promise      from 'bluebird';
-import bodyParser   from 'body-parser';
-import cookieParser from 'cookie-parser';
-import express      from 'express';
-import morgan       from 'morgan';
-import passport     from 'passport';
-import pg           from 'pg';
-import pgSession    from 'connect-pg-simple';
-import session      from 'express-session';
-import tumblr       from 'tumblr.js';
-import { Strategy } from 'passport-tumblr';
+import * as db      from '../shared/db'
+import Promise      from 'bluebird'
+import bodyParser   from 'body-parser'
+import cookieParser from 'cookie-parser'
+import express      from 'express'
+import morgan       from 'morgan'
+import passport     from 'passport'
+import pg           from 'pg'
+import pgSession    from 'connect-pg-simple'
+import session      from 'express-session'
+import tumblr       from 'tumblr.js'
+import { Strategy } from 'passport-tumblr'
+import SocketIO     from 'socket.io'
+import http         from 'http'
+import passportSocketIo from 'passport.socketio'
 
 import Cycle from '@cycle/core'
 import CycleDOM from '@cycle/dom'
@@ -61,7 +64,9 @@ function prependDoctype(html) {
 
 
 /* SETUP */
-var app = express();
+let app    = express()
+let server = http.Server(app)
+let sessionStore = new (pgSession(session))({ pg })
 
 app.use(morgan('combined'));
 app.set('view engine', 'jade');
@@ -76,7 +81,7 @@ app.use(session({
   secret: process.env.SESSION_SECRET,
   saveUninitialized: true,
   resave: true,
-  store: new (pgSession(session))({ pg }),
+  store: sessionStore,
   cookie: { maxAge: 90 * 24 * 60 * 60 * 1000 } // 90 days
 }));
 
@@ -248,8 +253,49 @@ app.get('/auth/tumblr/callback',
     res.redirect('/');
   }
 );
+/*
+app.use(session({
+  secret: process.env.SESSION_SECRET,
+  saveUninitialized: true,
+  resave: true,
+  store: new (pgSession(session))({ pg }),
+  cookie: { maxAge: 90 * 24 * 60 * 60 * 1000 } // 90 days
+}));
+*/
+
+let io = SocketIO(server, { path: '/proverbs/socket.io'})
+
+io.use(passportSocketIo.authorize({
+  cookieParser: cookieParser,
+  key:          'connect.sid',
+  secret:       process.env.SESSION_SECRET,
+  store:        sessionStore,
+
+  success: (data, accept) => {
+    console.log('successful connection to socket.io');
+    accept();
+  },
+
+  fail: (data, message, error, accept) => {
+    console.log('failed connection to socket.io:', message);
+    if(error)
+      accept(new Error(message));
+  }
+}))
+
+io.on('connection', (socket) => {
+  console.log('[connection]', socket.id);
+
+  ['connect', 'disconnect', 'reconnect', 'error'].forEach(evt => {
+    socket.on(evt, () => {
+      console.log(`[${evt}]`, socket.id)
+    })
+  })
+
+})
+
 
 /* START SERVER */
-app.listen(app.get('port'), () => {
+server.listen(app.get('port'), () => {
   console.log('Node app is running on port', app.get('port'));
 });

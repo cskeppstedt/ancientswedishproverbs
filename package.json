@@ -21,10 +21,13 @@
     "node-libs-browser": "^0.5.2",
     "passport": "^0.2.2",
     "passport-tumblr": "^0.1.2",
+    "passport.socketio": "^3.5.1",
     "pg": "^4.4.0",
     "request": "^2.58.0",
     "selenium-standalone": "^4.4.2",
     "serialize-javascript": "^1.0.0",
+    "socket.io": "^1.3.6",
+    "socket.io-client": "^1.3.6",
     "tumblr.js": "0.0.5",
     "webdriverio": "^2.4.5"
   },
