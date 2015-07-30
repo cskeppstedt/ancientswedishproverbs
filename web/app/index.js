@@ -41,6 +41,14 @@ let view = state$ => {
       <p>There are {state.posts ? state.posts.length.toString() : 'no'} posts in context</p>
       <input value={state.header} />
       <h4>Some counter: {state.count.toString()}</h4>
+      <table>
+        {state.posts.map(post => (
+          <tr>
+            <td>{post.original}</td>
+            <td>{post.translation}</td>
+          </tr>
+        ))}
+      </table>
     </div>
   ))
 }
