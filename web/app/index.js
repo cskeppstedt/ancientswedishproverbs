@@ -9,29 +9,35 @@ let { Rx } = Cycle;
 
 let intent = DOM => {
   return {
-    textChange$: DOM.get('input', 'input')
-      .map(ev => ev.target.value),
-
-    count$: Rx.Observable.merge(
-        DOM.get('p', 'mousedown').map(ev => {
-          ev.preventDefault()
-          return +1
-        }),
-        DOM.get('p', 'mouseenter').map(ev => +1),
-        DOM.get('p', 'mouseleave').map(ev => -1)
-    )
+    translationClick$: DOM.get('.post__translation', 'click')
   }
 }
 
 let model = (context, actions) => {
-  let header$ = actions.textChange$.startWith('Hello world!')
-  let count$  = actions.count$.startWith(0).scan((acc, diff) => acc+diff)
+  let editing$ = actions.translationClick$.startWith(false).map(true);
 
-  return Rx.Observable.combineLatest(header$, count$, context, (header, count, ctx) => ({
-    header: header,
-    count: count,
-    posts: ctx.posts
-  }))
+  //let header$ = actions.textChange$.startWith('Hello world!')
+  //let count$  = actions.count$.startWith(0).scan((acc, diff) => acc+diff)
+
+  return Rx.Observable.combineLatest(editing$, context, (editing, ctx) => {
+    let posts = ctx.posts.slice(0);
+
+    posts.sort((a,b) => {
+      if (a.post_url && !b.post_url)
+        return -1;
+      if (b.post_url && !a.post_url)
+        return 1;
+
+      return a.translation.toLowerCase().localeCompare(b.translation.toLowerCase());
+    });
+
+    let state = {
+      editing: editing,
+      posts: posts
+    };
+
+    return state;
+  })
 }
 
 let view = state$ => {
