@@ -36,19 +36,20 @@ let model = (context, actions) => {
 
 let view = state$ => {
   return state$.map(state => (
-    <div>
-      <h3>Hey there world: {state.header}</h3>
-      <p>There are {state.posts ? state.posts.length.toString() : 'no'} posts in context</p>
-      <input value={state.header} />
-      <h4>Some counter: {state.count.toString()}</h4>
-      <table>
+    <div className="ancient-app">
+      <ol className="posts">
         {state.posts.map(post => (
-          <tr>
-            <td>{post.original}</td>
-            <td>{post.translation}</td>
-          </tr>
+          <li className="posts__post">
+            <div className="post__translation">{post.translation}</div>
+            <div className="post__original">{post.original}</div>
+            <div className="post__action-bar">
+              <a href="#" className="action-bar__publish">Publish</a>
+              <span className="action-bar__divider" />
+              <a href="#" className="action-bar__favorite">S</a>
+            </div>
+          </li>
         ))}
-      </table>
+      </ol>
     </div>
   ))
 }

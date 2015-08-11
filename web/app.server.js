@@ -14,6 +14,7 @@ function wrapVTreeWithHTMLBoilerplate(vtree, context) {
     <html>
       <head>
         <title>cycle.js isomorphism test</title>
+        <link rel="stylesheet" href="http://localhost:8080/assets/app.css" />
       </head>
       <body>
         <div className="app-container">{ vtree }</div>

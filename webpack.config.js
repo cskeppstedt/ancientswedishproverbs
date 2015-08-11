@@ -1,7 +1,8 @@
 var path = require('path'),
     webpack = require('webpack'),
     autoprefixer = require('autoprefixer-core'),
-    prod = (process.env.NODE_ENV === 'production');
+    prod = (process.env.NODE_ENV === 'production'),
+    ExtractTextPlugin = require('extract-text-webpack-plugin');
 
 module.exports = {
   devtool: 'source-map',
@@ -26,6 +27,7 @@ module.exports = {
 
   plugins: [
     new webpack.NoErrorsPlugin(),
+    new ExtractTextPlugin('app.css'),
     new webpack.optimize.CommonsChunkPlugin('vendor', 'vendor.js'),
     /*new webpack.optimize.UglifyJsPlugin({ minimize: true })*/
   ],
@@ -43,13 +45,18 @@ module.exports = {
 
   module: {
     loaders: [
-      { test: /\.js/, exclude: /node_modules/, loaders: [
+      {
+        test: /\.js/,
+        exclude: /node_modules/,
+        loaders: [
           'babel-loader',
           'jsx-webpack-loader?ignoreDocblock&jsx=h&docblockUnknownTags'
         ]
       },
-      { test: /\.styl$/, loader: 'style-loader!css-loader!postcss-loader!stylus-loader' }
+      {
+        test: /\.scss$/,
+        loader: ExtractTextPlugin.extract('css!autoprefixer-loader!sass')
+      }
     ]
-  },
-  postcss: [autoprefixer({})]
+  }
 };
